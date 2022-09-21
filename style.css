@@ -1,0 +1,30 @@
+* {
+    margin: 0 auto;
+    padding: 0;
+    background: #aaa;
+  }
+  
+  #mainDiv {
+    width: 1000px;
+  }
+
+  #gameCanvas {
+    background: white;
+    display: block;
+  }
+
+  .makeBtn {
+    margin: 20px;
+    width: 200px;
+    height: 200px;
+    background-color: coral;
+    float: left;
+    font-size: 36px;
+  }
+
+  .btnRow {
+    clear: left;
+    left: 0px;
+    width: 1000px;
+    height: 220px;
+  }
