@@ -8,8 +8,10 @@ const wanDelBtn = document.querySelector("#wanDel");
 
 const FRAMES = 1000 / 30;
 
-canvas.width = 1000;
-canvas.height = 400;
+// canvas.width = 1000;
+// canvas.height = 400;
+canvas.width = document.body.clientWidth;
+canvas.height = parseInt(canvas.width * 0.25);
 const mapW = canvas.width;
 const mapH = canvas.height;
 
@@ -77,7 +79,7 @@ function disableBtn() {
 function encounter() {
   var frontNe = nekoMap.size
     ? Math.min(...Array.from(nekoMap.values()).map((item) => item.x))
-    : 1100;
+    : mapW + 100;
   var frontWan = wankoMap.size
     ? Math.max(...Array.from(wankoMap.values()).map((item) => item.x))
     : -100;
