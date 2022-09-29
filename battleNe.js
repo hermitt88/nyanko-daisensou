@@ -8,12 +8,14 @@ const wanDelBtn = document.querySelector("#wanDel");
 
 const FRAMES = 1000 / 30;
 
-// canvas.width = 1000;
-// canvas.height = 400;
+// scale = parseInt(document.body.clientWidth / 100) / 10;
+// canvas.width = parseInt(document.body.clientWidth / 100) * 100;
+scale = document.body.clientWidth / 4000;
 canvas.width = document.body.clientWidth;
-canvas.height = parseInt(canvas.width * 0.25);
-const mapW = canvas.width;
-const mapH = canvas.height;
+canvas.height = canvas.width * 0.25;
+const mapW = 4000;
+const mapH = 1000;
+ctx.scale(scale, scale);
 
 ctx.fillStyle = "#333";
 
@@ -44,7 +46,7 @@ function drawWan(wanko) {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, mapW, mapH);
   for (var wanko of wankoMap.values()) {
     drawWan(wanko);
 
@@ -105,7 +107,19 @@ function encounter() {
 setInterval(draw, FRAMES);
 
 class Ne {
-  constructor(width, height, speed, color, atkRange, atkCast, atkSpeed) {
+  constructor(
+    cost,
+    width,
+    height,
+    speed,
+    color,
+    hp,
+    atk,
+    atkRange,
+    atkCast,
+    atkSpeed
+  ) {
+    this.cost = cost;
     this.id = neId;
     this.width = width;
     this.height = height;
@@ -113,7 +127,8 @@ class Ne {
     this.y = mapH - height;
     this.dx = -speed;
     this.color = color;
-    // this.hp = hp;
+    this.hp = hp;
+    this.atk = atk;
     this.lockon = false;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
@@ -122,7 +137,19 @@ class Ne {
 }
 
 class Wanko {
-  constructor(width, height, speed, color, atkRange, atkCast, atkSpeed) {
+  constructor(
+    reward,
+    width,
+    height,
+    speed,
+    color,
+    hp,
+    atk,
+    atkRange,
+    atkCast,
+    atkSpeed
+  ) {
+    this.reward = reward;
     this.id = wanId;
     this.width = width;
     this.height = height;
@@ -130,7 +157,8 @@ class Wanko {
     this.y = mapH - height;
     this.dx = speed;
     this.color = color;
-    // this.hp = hp;
+    this.hp = hp;
+    this.atk = atk;
     this.lockon = false;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
@@ -144,18 +172,62 @@ var neId = 0;
 var wankoMap = new Map();
 var wanId = 0;
 
-function makeNe(width, height, speed, color, atkRange, atkCast, atkSpeed) {
+function makeNe(
+  cost,
+  width,
+  height,
+  speed,
+  color,
+  hp,
+  atk,
+  atkRange,
+  atkCast,
+  atkSpeed
+) {
   nekoMap.set(
     neId,
-    new Ne(width, height, speed, color, atkRange, atkCast, atkSpeed)
+    new Ne(
+      cost,
+      width,
+      height,
+      speed,
+      color,
+      hp,
+      atk,
+      atkRange,
+      atkCast,
+      atkSpeed
+    )
   );
   neId += 1;
 }
 
-function makeWan(width, height, speed, color, atkRange, atkCast, atkSpeed) {
+function makeWan(
+  reward,
+  width,
+  height,
+  speed,
+  color,
+  hp,
+  atk,
+  atkRange,
+  atkCast,
+  atkSpeed
+) {
   wankoMap.set(
     wanId,
-    new Wanko(width, height, speed, color, atkRange, atkCast, atkSpeed)
+    new Wanko(
+      reward,
+      width,
+      height,
+      speed,
+      color,
+      hp,
+      atk,
+      atkRange,
+      atkCast,
+      atkSpeed
+    )
   );
   wanId += 1;
 }
@@ -164,14 +236,15 @@ function makeWan(width, height, speed, color, atkRange, atkCast, atkSpeed) {
 // 1.23 s = 37 frame, 0.27 s = 8 frame. 2.23 s = 67 frame
 // cat&dog movement 10, atkRange 140
 // tank cat movement 8, atkRange 110
+// 탱크캣 대략 폭을 2초만에?
 ne1Btn.addEventListener("click", () => {
-  makeNe(100, 100, 10, "brown", 100, 37 * FRAMES, 8 * FRAMES);
+  makeNe(75, 350, 350, 10, "brown", 100, 8, 140, 37 * FRAMES, 8 * FRAMES);
 });
 ne2Btn.addEventListener("click", () => {
-  makeNe(80, 200, 8, "green", 70, 67 * FRAMES, 8 * FRAMES);
+  makeNe(150, 300, 700, 8, "green", 400, 2, 110, 67 * FRAMES, 8 * FRAMES);
 });
 wan1Btn.addEventListener("click", () => {
-  makeWan(100, 100, 10, "gold", 100, 37 * FRAMES, 8 * FRAMES);
+  makeWan(15, 350, 350, 10, "gold", 100, 8, 110, 37 * FRAMES, 8 * FRAMES);
 });
 
 neDelBtn.addEventListener("click", () => {
