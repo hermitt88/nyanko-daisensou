@@ -7,15 +7,25 @@ const wan1Btn = document.querySelector("#wan1");
 const wanDelBtn = document.querySelector("#wanDel");
 
 const FRAMES = 1000 / 30;
+let timer;
 
-// scale = parseInt(document.body.clientWidth / 100) / 10;
-// canvas.width = parseInt(document.body.clientWidth / 100) * 100;
+const mapW = 4000;
+const mapH = 1000;
 scale = document.body.clientWidth / 4000;
 canvas.width = document.body.clientWidth;
 canvas.height = canvas.width * 0.25;
-const mapW = 4000;
-const mapH = 1000;
 ctx.scale(scale, scale);
+
+const handleResize = () => {
+  clearTimeout(timer);
+  timer = setTimeout(function () {
+    scale = document.body.clientWidth / 4000;
+    canvas.width = document.body.clientWidth;
+    canvas.height = canvas.width * 0.25;
+    ctx.scale(scale, scale);
+  }, 500);
+};
+handleResize();
 
 ctx.fillStyle = "#333";
 
@@ -87,8 +97,13 @@ function encounter() {
     : -100;
 
   for (var neko of nekoMap.values()) {
+    // 모든 유닛의 적 탐지범위는 '-320부터 사거리까지'임. 특수 상황에서 서로 320만큼 엇갈리면 통과 가능.
+    // 지금은 그냥 위 사항을 무시하기로 한다.
     if (neko.x - neko.atkRange <= frontWan) {
       neko.lockon = true;
+
+      // 타겟 찾기
+      // 공격속도도 고려해야 함
     } else {
       neko.lockon = false;
     }
@@ -101,12 +116,12 @@ function encounter() {
     }
   }
 
-  return { frontWan: frontWan, frontNe: frontNe };
+  // return { frontWan, frontNe };
 }
 
 setInterval(draw, FRAMES);
 
-class Ne {
+class Neko {
   constructor(
     cost,
     width,
@@ -115,6 +130,7 @@ class Ne {
     color,
     hp,
     atk,
+    atkType,
     atkRange,
     atkCast,
     atkSpeed
@@ -129,6 +145,7 @@ class Ne {
     this.color = color;
     this.hp = hp;
     this.atk = atk;
+    this.atkType = atkType;
     this.lockon = false;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
@@ -145,6 +162,7 @@ class Wanko {
     color,
     hp,
     atk,
+    atkType,
     atkRange,
     atkCast,
     atkSpeed
@@ -159,6 +177,7 @@ class Wanko {
     this.color = color;
     this.hp = hp;
     this.atk = atk;
+    this.atkType = atkType;
     this.lockon = false;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
@@ -180,13 +199,14 @@ function makeNe(
   color,
   hp,
   atk,
+  atkType,
   atkRange,
   atkCast,
   atkSpeed
 ) {
   nekoMap.set(
     neId,
-    new Ne(
+    new Neko(
       cost,
       width,
       height,
@@ -194,6 +214,7 @@ function makeNe(
       color,
       hp,
       atk,
+      atkType,
       atkRange,
       atkCast,
       atkSpeed
@@ -210,6 +231,7 @@ function makeWan(
   color,
   hp,
   atk,
+  atkType,
   atkRange,
   atkCast,
   atkSpeed
@@ -224,6 +246,7 @@ function makeWan(
       color,
       hp,
       atk,
+      atkType,
       atkRange,
       atkCast,
       atkSpeed
@@ -234,17 +257,50 @@ function makeWan(
 
 // 1 s = 30 frame
 // 1.23 s = 37 frame, 0.27 s = 8 frame. 2.23 s = 67 frame
-// cat&dog movement 10, atkRange 140
-// tank cat movement 8, atkRange 110
-// 탱크캣 대략 폭을 2초만에?
 ne1Btn.addEventListener("click", () => {
-  makeNe(75, 350, 350, 10, "brown", 100, 8, 140, 37 * FRAMES, 8 * FRAMES);
+  makeNe(
+    75,
+    200,
+    200,
+    10,
+    "brown",
+    100,
+    8,
+    "single",
+    140,
+    37 * FRAMES,
+    8 * FRAMES
+  );
 });
 ne2Btn.addEventListener("click", () => {
-  makeNe(150, 300, 700, 8, "green", 400, 2, 110, 67 * FRAMES, 8 * FRAMES);
+  makeNe(
+    150,
+    180,
+    400,
+    8,
+    "green",
+    400,
+    2,
+    "area",
+    110,
+    67 * FRAMES,
+    8 * FRAMES
+  );
 });
 wan1Btn.addEventListener("click", () => {
-  makeWan(15, 350, 350, 10, "gold", 100, 8, 110, 37 * FRAMES, 8 * FRAMES);
+  makeWan(
+    15,
+    200,
+    200,
+    10,
+    "gold",
+    100,
+    8,
+    "single",
+    110,
+    37 * FRAMES,
+    8 * FRAMES
+  );
 });
 
 neDelBtn.addEventListener("click", () => {
@@ -255,3 +311,5 @@ wanDelBtn.addEventListener("click", () => {
   wankoMap.clear();
   wanId = 0;
 });
+
+window.addEventListener("resize", handleResize);

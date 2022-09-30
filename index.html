@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Battle Ne-</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id='mainDiv'>
-        <canvas id='gameCanvas'></canvas>
-        <div class='btnRow'>
-            <div class='makeBtn' id='ne1'>Neko1</div>
-            <div class='makeBtn' id='ne2'>Neko2</div>
-            <div class='makeBtn' id='neDel'>Remove All Neko</div>
-        </div>
-        <div class='btnRow'>
-            <div class='makeBtn' id='wan1'>Wanko1</div>
-            <div class='makeBtn' id='wanDel'>Remove All Wanko</div>
-        </div>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="battleNe.js"></script>
+  </head>
+  <body>
+    <div id="mainDiv">
+      <canvas id="gameCanvas"></canvas>
+      <div class="btnRow" id="nekoBtnRow">
+        <div class="makeBtn" id="ne1">Neko1</div>
+        <div class="makeBtn" id="ne2">Neko2</div>
+      </div>
+      <div class="btnRow" id="wankoBtnRow">
+        <div class="makeBtn" id="wan1">Wanko1</div>
+      </div>
+      <div class="btnRow" id="controlPanel">
+        <div class="makeBtn controlBtn" id="neDel">Remove All Neko</div>
+        <div class="makeBtn controlBtn" id="wanDel">Remove All Wanko</div>
+      </div>
     </div>
-    <script src="battleNe.js"></script>
-</body>
+  </body>
 </html>

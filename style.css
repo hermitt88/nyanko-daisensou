@@ -28,6 +28,10 @@ body {
   font-size: 20px;
 }
 
+.controlBtn {
+  background-color: aqua;
+}
+
 .btnRow {
   clear: left;
   left: 0px;
