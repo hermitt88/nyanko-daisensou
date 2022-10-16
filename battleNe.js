@@ -103,6 +103,7 @@ function encounter() {
       neko.lockon = true;
 
       // 타겟 찾기
+      // [...nekoMap].filter(([i,v])=> 0 <= v.x && v.x <=2000)
       // 공격속도도 고려해야 함
     } else {
       neko.lockon = false;
