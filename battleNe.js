@@ -58,29 +58,28 @@ function drawWan(wanko) {
 function draw() {
   ctx.clearRect(0, 0, mapW, mapH);
   for (var wanko of wankoMap.values()) {
-    drawWan(wanko);
-
     if (!wanko.lockon) {
       wanko.x += wanko.dx;
-      if (wanko.x > mapW - 100) {
-        wankoMap.delete(wanko.id);
-      }
     }
+    if (wanko.hp <= 0 || wanko.x > mapW - 100) {
+      wankoMap.delete(wanko.id);
+    }
+    drawWan(wanko);
   }
 
   for (var neko of nekoMap.values()) {
-    drawNe(neko);
-
     if (!neko.lockon) {
       neko.x += neko.dx;
-      if (neko.x < 100) {
-        nekoMap.delete(neko.id);
-      }
     }
+    if (neko.hp <= 0 || neko.x < 100) {
+      nekoMap.delete(neko.id);
+    }
+    drawNe(neko);
   }
 
   drawEndline();
-  encounter();
+  detectEnemyWanko();
+  detectEnemyNeko();
 }
 
 function disableBtn() {
@@ -88,36 +87,76 @@ function disableBtn() {
   // classList.remove("mystyle");
 }
 
-function encounter() {
-  var frontNe = nekoMap.size
-    ? Math.min(...Array.from(nekoMap.values()).map((item) => item.x))
-    : mapW + 100;
-  var frontWan = wankoMap.size
-    ? Math.max(...Array.from(wankoMap.values()).map((item) => item.x))
-    : -100;
-
+function detectEnemyWanko() {
   for (var neko of nekoMap.values()) {
-    // 모든 유닛의 적 탐지범위는 '-320부터 사거리까지'임. 특수 상황에서 서로 320만큼 엇갈리면 통과 가능.
-    // 지금은 그냥 위 사항을 무시하기로 한다.
-    if (neko.x - neko.atkRange <= frontWan) {
+    const detStart = neko.x + 320;
+    const detEnd = neko.x - neko.atkRange;
+    const wankoInRange = [...wankoMap].filter(
+      ([id, wanko]) => detStart >= wanko.x && detEnd <= wanko.x
+    );
+    if (wankoInRange.length) {
       neko.lockon = true;
-
-      // 타겟 찾기
-      // [...nekoMap].filter(([i,v])=> 0 <= v.x && v.x <=2000)
-      // 공격속도도 고려해야 함
+      if (neko.atkState == -1) {
+        neko.atkState = 3;
+        setTimeout(() => {
+          neko.atkState = 0;
+        }, neko.atkCast);
+      } else if (neko.atkState == 0) {
+        if (neko.atkType == "single") {
+          wankoMap.get(wankoInRange[wankoInRange.length - 1][0]).hp -= neko.atk;
+        } else if (neko.atkType == "area") {
+          [...wankoInRange].map(
+            ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
+          );
+        }
+        neko.atkState = 1;
+      } else if (neko.atkState == 1) {
+        neko.atkState = 3;
+        setTimeout(() => {
+          neko.atkState = -1;
+        }, neko.atkSpeed - neko.atkCast);
+      }
     } else {
       neko.lockon = false;
+      neko.atkState = -1;
     }
   }
+}
+
+function detectEnemyNeko() {
   for (var wanko of wankoMap.values()) {
-    if (wanko.x + wanko.atkRange >= frontNe) {
+    const detStart = wanko.x - 320;
+    const detEnd = wanko.x + wanko.atkRange;
+    const nekoInRange = [...nekoMap].filter(
+      ([id, neko]) => detStart <= neko.x && detEnd >= neko.x
+    );
+    if (nekoInRange.length) {
       wanko.lockon = true;
+      if (wanko.atkState == -1) {
+        wanko.atkState = 3;
+        setTimeout(() => {
+          wanko.atkState = 0;
+        }, wanko.atkCast);
+      } else if (wanko.atkState == 0) {
+        if (wanko.atkType == "single") {
+          nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
+        } else if (wanko.atkType == "area") {
+          [...nekoInRange].map(
+            ([id, neko]) => (nekoMap.get(id).hp -= wanko.atk)
+          );
+        }
+        wanko.atkState = 1;
+      } else if (wanko.atkState == 1) {
+        wanko.atkState = 3;
+        setTimeout(() => {
+          wanko.atkState = -1;
+        }, wanko.atkSpeed - wanko.atkCast);
+      }
     } else {
       wanko.lockon = false;
+      wanko.atkState = -1;
     }
   }
-
-  // return { frontWan, frontNe };
 }
 
 setInterval(draw, FRAMES);
@@ -148,6 +187,7 @@ class Neko {
     this.atk = atk;
     this.atkType = atkType;
     this.lockon = false;
+    this.atkState = -1;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
     this.atkSpeed = atkSpeed;
@@ -180,6 +220,7 @@ class Wanko {
     this.atk = atk;
     this.atkType = atkType;
     this.lockon = false;
+    this.atkState = -1;
     this.atkRange = atkRange;
     this.atkCast = atkCast;
     this.atkSpeed = atkSpeed;
