@@ -2,24 +2,170 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const ne1Btn = document.querySelector("#ne1");
 const ne2Btn = document.querySelector("#ne2");
-const neDelBtn = document.querySelector("#neDel");
-const wan1Btn = document.querySelector("#wan1");
-const wanDelBtn = document.querySelector("#wanDel");
+const ne3Btn = document.querySelector("#ne3");
+const resetBtn = document.querySelector("#resetGame");
 
 const FRAMES = 1000 / 30;
-let timer;
+let resizeTimer;
 
-const mapW = 4000;
-const mapH = 1000;
-scale = document.body.clientWidth / 4000;
+let gameTimer;
+let stage1Timer;
+
+const mapW = 3600;
+const mapH = 900;
+scale = document.body.clientWidth / mapW;
 canvas.width = document.body.clientWidth;
 canvas.height = canvas.width * 0.25;
 ctx.scale(scale, scale);
 
+var nekoMap, neId, wankoMap, wanId;
+
+class Neko {
+  constructor(
+    cost,
+    cooldown,
+    width,
+    height,
+    speed,
+    color,
+    hp,
+    atk,
+    atkType,
+    atkRange,
+    atkSpeed1,
+    atkSpeed2,
+    atkSpeed3
+  ) {
+    this.cost = cost;
+    this.cooldown = cooldown;
+    this.id = neId;
+    this.width = width;
+    this.height = height;
+    this.x = mapW - 100 - width;
+    this.y = mapH - height;
+    this.dx = -speed;
+    this.color = color;
+    this.hp = hp;
+    this.atk = atk;
+    this.atkType = atkType;
+    this.lockon = false;
+    this.atkState = -1;
+    this.atkRange = atkRange;
+    this.atkSpeed1 = atkSpeed1;
+    this.atkSpeed2 = atkSpeed2;
+    this.atkSpeed3 = atkSpeed3;
+  }
+}
+
+class Wanko {
+  constructor(
+    reward,
+    width,
+    height,
+    speed,
+    color,
+    hp,
+    atk,
+    atkType,
+    atkRange,
+    atkSpeed1,
+    atkSpeed2,
+    atkSpeed3
+  ) {
+    this.reward = reward;
+    this.id = wanId;
+    this.width = width;
+    this.height = height;
+    this.x = 100 + width;
+    this.y = mapH - height;
+    this.dx = speed;
+    this.color = color;
+    this.hp = hp;
+    this.atk = atk;
+    this.atkType = atkType;
+    this.lockon = false;
+    this.atkState = -1;
+    this.atkRange = atkRange;
+    this.atkSpeed1 = atkSpeed1;
+    this.atkSpeed2 = atkSpeed2;
+    this.atkSpeed3 = atkSpeed3;
+  }
+}
+
+function makeNe(
+  cost,
+  cooldown,
+  width,
+  height,
+  speed,
+  color,
+  hp,
+  atk,
+  atkType,
+  atkRange,
+  atkSpeed1,
+  atkSpeed2,
+  atkSpeed3
+) {
+  nekoMap.set(
+    neId,
+    new Neko(
+      cost,
+      cooldown,
+      width,
+      height,
+      speed,
+      color,
+      hp,
+      atk,
+      atkType,
+      atkRange,
+      atkSpeed1,
+      atkSpeed2,
+      atkSpeed3
+    )
+  );
+  neId += 1;
+}
+
+function makeWan(
+  reward,
+  width,
+  height,
+  speed,
+  color,
+  hp,
+  atk,
+  atkType,
+  atkRange,
+  atkSpeed1,
+  atkSpeed2,
+  atkSpeed3
+) {
+  wankoMap.set(
+    wanId,
+    new Wanko(
+      reward,
+      width,
+      height,
+      speed,
+      color,
+      hp,
+      atk,
+      atkType,
+      atkRange,
+      atkSpeed1,
+      atkSpeed2,
+      atkSpeed3
+    )
+  );
+  wanId += 1;
+}
+
 const handleResize = () => {
-  clearTimeout(timer);
-  timer = setTimeout(function () {
-    scale = document.body.clientWidth / 4000;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function () {
+    scale = document.body.clientWidth / mapW;
     canvas.width = document.body.clientWidth;
     canvas.height = canvas.width * 0.25;
     ctx.scale(scale, scale);
@@ -61,7 +207,7 @@ function draw() {
     if (!wanko.lockon) {
       wanko.x += wanko.dx;
     }
-    if (wanko.hp <= 0 || wanko.x > mapW - 100) {
+    if (wanko.hp <= 0) {
       wankoMap.delete(wanko.id);
     }
     drawWan(wanko);
@@ -71,7 +217,7 @@ function draw() {
     if (!neko.lockon) {
       neko.x += neko.dx;
     }
-    if (neko.hp <= 0 || neko.x < 100) {
+    if (neko.hp <= 0) {
       nekoMap.delete(neko.id);
     }
     drawNe(neko);
@@ -96,29 +242,32 @@ function detectEnemyWanko() {
     );
     if (wankoInRange.length) {
       neko.lockon = true;
-      if (neko.atkState == -1) {
-        neko.atkState = 3;
+      if (neko.atkState == 0) {
+        neko.atkState = -1;
+        setTimeout(() => {
+          neko.atkState = 1;
+        }, neko.atkSpeed1);
+      } else if (neko.atkState == 1) {
+        neko.atkState = -1;
+        setTimeout(() => {
+          if (neko.atkType == "single") {
+            wankoMap.get(wankoInRange[0][0]).hp -= neko.atk;
+          } else if (neko.atkType == "area") {
+            [...wankoInRange].map(
+              ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
+            );
+          }
+          neko.atkState = 2;
+        }, neko.atkSpeed2);
+      } else if (neko.atkState == 2) {
+        neko.atkState = -1;
         setTimeout(() => {
           neko.atkState = 0;
-        }, neko.atkCast);
-      } else if (neko.atkState == 0) {
-        if (neko.atkType == "single") {
-          wankoMap.get(wankoInRange[wankoInRange.length - 1][0]).hp -= neko.atk;
-        } else if (neko.atkType == "area") {
-          [...wankoInRange].map(
-            ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
-          );
-        }
-        neko.atkState = 1;
-      } else if (neko.atkState == 1) {
-        neko.atkState = 3;
-        setTimeout(() => {
-          neko.atkState = -1;
-        }, neko.atkSpeed - neko.atkCast);
+        }, neko.atkSpeed3);
       }
     } else {
       neko.lockon = false;
-      neko.atkState = -1;
+      neko.atkState = 0;
     }
   }
 }
@@ -132,176 +281,106 @@ function detectEnemyNeko() {
     );
     if (nekoInRange.length) {
       wanko.lockon = true;
-      if (wanko.atkState == -1) {
-        wanko.atkState = 3;
+      if (wanko.atkState == 0) {
+        wanko.atkState = -1;
+        setTimeout(() => {
+          wanko.atkState = 1;
+        }, wanko.atkSpeed1);
+      } else if (wanko.atkState == 1) {
+        wanko.atkState = -1;
+        setTimeout(() => {
+          if (wanko.atkType == "single") {
+            nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
+          } else if (wanko.atkType == "area") {
+            [...nekoInRange].map(
+              ([id, neko]) => (nekoMap.get(id).hp -= wanko.atk)
+            );
+          }
+          wanko.atkState = 2;
+        }, wanko.atkSpeed2);
+      } else if (wanko.atkState == 2) {
+        wanko.atkState = -1;
         setTimeout(() => {
           wanko.atkState = 0;
-        }, wanko.atkCast);
-      } else if (wanko.atkState == 0) {
-        if (wanko.atkType == "single") {
-          nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
-        } else if (wanko.atkType == "area") {
-          [...nekoInRange].map(
-            ([id, neko]) => (nekoMap.get(id).hp -= wanko.atk)
-          );
-        }
-        wanko.atkState = 1;
-      } else if (wanko.atkState == 1) {
-        wanko.atkState = 3;
-        setTimeout(() => {
-          wanko.atkState = -1;
-        }, wanko.atkSpeed - wanko.atkCast);
+        }, wanko.atkSpeed3);
       }
     } else {
       wanko.lockon = false;
-      wanko.atkState = -1;
+      wanko.atkState = 0;
     }
   }
 }
 
-setInterval(draw, FRAMES);
-
-class Neko {
-  constructor(
-    cost,
-    width,
-    height,
-    speed,
-    color,
-    hp,
-    atk,
-    atkType,
-    atkRange,
-    atkCast,
-    atkSpeed
-  ) {
-    this.cost = cost;
-    this.id = neId;
-    this.width = width;
-    this.height = height;
-    this.x = mapW - 100 - width;
-    this.y = mapH - height;
-    this.dx = -speed;
-    this.color = color;
-    this.hp = hp;
-    this.atk = atk;
-    this.atkType = atkType;
-    this.lockon = false;
-    this.atkState = -1;
-    this.atkRange = atkRange;
-    this.atkCast = atkCast;
-    this.atkSpeed = atkSpeed;
-  }
-}
-
-class Wanko {
-  constructor(
-    reward,
-    width,
-    height,
-    speed,
-    color,
-    hp,
-    atk,
-    atkType,
-    atkRange,
-    atkCast,
-    atkSpeed
-  ) {
-    this.reward = reward;
-    this.id = wanId;
-    this.width = width;
-    this.height = height;
-    this.x = 100 + width;
-    this.y = mapH - height;
-    this.dx = speed;
-    this.color = color;
-    this.hp = hp;
-    this.atk = atk;
-    this.atkType = atkType;
-    this.lockon = false;
-    this.atkState = -1;
-    this.atkRange = atkRange;
-    this.atkCast = atkCast;
-    this.atkSpeed = atkSpeed;
-  }
-}
-
-var nekoMap = new Map();
-var neId = 0;
-
-var wankoMap = new Map();
-var wanId = 0;
-
-function makeNe(
-  cost,
-  width,
-  height,
-  speed,
-  color,
-  hp,
-  atk,
-  atkType,
-  atkRange,
-  atkCast,
-  atkSpeed
-) {
-  nekoMap.set(
-    neId,
-    new Neko(
-      cost,
-      width,
-      height,
-      speed,
-      color,
-      hp,
-      atk,
-      atkType,
-      atkRange,
-      atkCast,
-      atkSpeed
-    )
+function stage1() {
+  // 처음 1마리 소환
+  // 600F 뒤부터 300F마다 소환
+  // 성 체력 50% 이하 30F 간격으로 8개
+  makeWan(
+    15,
+    200,
+    200,
+    5,
+    "gold",
+    100,
+    8,
+    "single",
+    110,
+    29 * FRAMES,
+    8 * FRAMES,
+    10 * FRAMES
   );
-  neId += 1;
+  setTimeout(() => {
+    stage1Timer = setInterval(() => {
+      makeWan(
+        15,
+        200,
+        200,
+        5,
+        "gold",
+        100,
+        8,
+        "single",
+        110,
+        29 * FRAMES,
+        8 * FRAMES,
+        10 * FRAMES
+      );
+    }, 300 * FRAMES);
+  }, 600 * FRAMES);
 }
 
-function makeWan(
-  reward,
-  width,
-  height,
-  speed,
-  color,
-  hp,
-  atk,
-  atkType,
-  atkRange,
-  atkCast,
-  atkSpeed
-) {
-  wankoMap.set(
-    wanId,
-    new Wanko(
-      reward,
-      width,
-      height,
-      speed,
-      color,
-      hp,
-      atk,
-      atkType,
-      atkRange,
-      atkCast,
-      atkSpeed
-    )
-  );
-  wanId += 1;
+function startGame() {
+  clearInterval(gameTimer);
+  clearInterval(stage1Timer);
+  nekoMap = new Map();
+  neId = 0;
+  wankoMap = new Map();
+  wanId = 0;
+
+  stage1();
+
+  gameTimer = setInterval(draw, FRAMES);
 }
 
-// 1 s = 30 frame
-// 1.23 s = 37 frame, 0.27 s = 8 frame. 2.23 s = 67 frame
+startGame();
+
+// (cost,
+//   width,
+//   height,
+//   speed,
+//   color,
+//   hp,
+//   atk,
+//   atkType,
+//   atkRange,
+//   atkSpeed1,
+//   atkSpeed2,
+//   atkSpeed3
+// )
 ne1Btn.addEventListener("click", () => {
   makeNe(
-    75,
+    50,
+    160 * FRAMES,
     200,
     200,
     10,
@@ -310,13 +389,15 @@ ne1Btn.addEventListener("click", () => {
     8,
     "single",
     140,
-    37 * FRAMES,
-    8 * FRAMES
+    19 * FRAMES,
+    8 * FRAMES,
+    10 * FRAMES
   );
 });
 ne2Btn.addEventListener("click", () => {
   makeNe(
-    150,
+    100,
+    250 * FRAMES,
     180,
     400,
     8,
@@ -325,33 +406,29 @@ ne2Btn.addEventListener("click", () => {
     2,
     "area",
     110,
-    67 * FRAMES,
+    51 * FRAMES,
+    8 * FRAMES,
     8 * FRAMES
   );
 });
-wan1Btn.addEventListener("click", () => {
-  makeWan(
-    15,
-    200,
-    200,
-    10,
-    "gold",
-    100,
+ne3Btn.addEventListener("click", () => {
+  makeNe(
+    400,
+    340 * FRAMES,
+    180,
+    400,
     8,
+    "silver",
+    400,
+    100,
     "single",
-    110,
-    37 * FRAMES,
+    350,
+    111 * FRAMES,
+    8 * FRAMES,
     8 * FRAMES
   );
 });
 
-neDelBtn.addEventListener("click", () => {
-  nekoMap.clear();
-  neId = 0;
-});
-wanDelBtn.addEventListener("click", () => {
-  wankoMap.clear();
-  wanId = 0;
-});
+resetBtn.addEventListener("click", startGame);
 
 window.addEventListener("resize", handleResize);

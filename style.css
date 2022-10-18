@@ -26,6 +26,9 @@ body {
   background-color: coral;
   float: left;
   font-size: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .controlBtn {
