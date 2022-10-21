@@ -19,6 +19,10 @@ canvas.height = canvas.width * 0.25;
 ctx.scale(scale, scale);
 
 var nekoMap, neId, wankoMap, wanId;
+var currentMoney;
+var moneyPerFrame;
+var maxMoney;
+var moneyLevel;
 
 class Neko {
   constructor(
@@ -357,6 +361,11 @@ function startGame() {
   wankoMap = new Map();
   wanId = 0;
 
+  currentMoney = 0;
+  moneyPerFrame = 0.3;
+  maxMoney = 500;
+  moneyLevel = 1;
+
   stage1();
 
   gameTimer = setInterval(draw, FRAMES);
@@ -365,6 +374,7 @@ function startGame() {
 startGame();
 
 // (cost,
+//   cooldown,
 //   width,
 //   height,
 //   speed,
