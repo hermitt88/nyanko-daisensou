@@ -1,5 +1,7 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const gameCanvas = document.getElementById("gameCanvas");
+const gameCtx = gameCanvas.getContext("2d");
+const textCanvas = document.getElementById("textCanvas");
+const textCtx = gameCanvas.getContext("2d");
 const ne1Btn = document.querySelector("#ne1");
 const ne2Btn = document.querySelector("#ne2");
 const ne3Btn = document.querySelector("#ne3");
@@ -14,9 +16,12 @@ let stage1Timer;
 const mapW = 3600;
 const mapH = 900;
 scale = document.body.clientWidth / mapW;
-canvas.width = document.body.clientWidth;
-canvas.height = canvas.width * 0.25;
-ctx.scale(scale, scale);
+textCanvas.width = document.body.clientWidth;
+textCanvas.height = textCanvas.width * 0.25;
+textCtx.scale(scale, scale);
+gameCanvas.width = document.body.clientWidth;
+gameCanvas.height = gameCanvas.width * 0.25;
+gameCtx.scale(scale, scale);
 
 var nekoMap, neId, wankoMap, wanId;
 var currentMoney;
@@ -170,43 +175,59 @@ const handleResize = () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(function () {
     scale = document.body.clientWidth / mapW;
-    canvas.width = document.body.clientWidth;
-    canvas.height = canvas.width * 0.25;
-    ctx.scale(scale, scale);
+    textCanvas.width = document.body.clientWidth;
+    textCanvas.height = textCanvas.width * 0.25;
+    textCtx.scale(scale, scale);
+    gameCanvas.width = document.body.clientWidth;
+    gameCanvas.height = gameCanvas.width * 0.25;
+    gameCtx.scale(scale, scale);
   }, 500);
 };
 handleResize();
 
-ctx.fillStyle = "#333";
+gameCtx.fillStyle = "#333";
 
-ctx.strokeStyle = "black";
-ctx.lineWidth = 1;
+gameCtx.strokeStyle = "black";
+gameCtx.lineWidth = 1;
+
+textCtx.font = "normal bold 100px sans-serif";
+textCtx.textAlign = "right";
+textCtx.textBaseline = "top";
+
+function drawMoney() {
+  textCtx.fillStyle = "red";
+  textCtx.fillText(
+    `${parseInt(currentMoney)} / ${maxMoney} G`,
+    mapW - 100,
+    100
+  );
+}
 
 function drawEndline() {
   for (var j of [100, mapW - 100]) {
     for (var i = 0; i < mapH / 10; i++) {
       if (i % 2 == 1) {
-        ctx.beginPath();
-        ctx.moveTo(j, 10 * i);
-        ctx.lineTo(j, 10 * (i + 1));
-        ctx.stroke();
+        gameCtx.beginPath();
+        gameCtx.moveTo(j, 10 * i);
+        gameCtx.lineTo(j, 10 * (i + 1));
+        gameCtx.stroke();
       }
     }
   }
 }
 
 function drawNe(neko) {
-  ctx.fillStyle = neko.color;
-  ctx.fillRect(neko.x, neko.y, neko.width, neko.height);
+  gameCtx.fillStyle = neko.color;
+  gameCtx.fillRect(neko.x, neko.y, neko.width, neko.height);
 }
 
 function drawWan(wanko) {
-  ctx.fillStyle = wanko.color;
-  ctx.fillRect(wanko.x - wanko.width, wanko.y, wanko.width, wanko.height);
+  gameCtx.fillStyle = wanko.color;
+  gameCtx.fillRect(wanko.x - wanko.width, wanko.y, wanko.width, wanko.height);
 }
 
 function draw() {
-  ctx.clearRect(0, 0, mapW, mapH);
+  gameCtx.clearRect(0, 0, mapW, mapH);
   for (var wanko of wankoMap.values()) {
     if (!wanko.lockon) {
       wanko.x += wanko.dx;
@@ -227,6 +248,7 @@ function draw() {
     drawNe(neko);
   }
 
+  drawMoney();
   drawEndline();
   detectEnemyWanko();
   detectEnemyNeko();
@@ -317,7 +339,7 @@ function detectEnemyNeko() {
 
 function stage1() {
   // 처음 1마리 소환
-  // 600F 뒤부터 300F마다 소환
+  // 600F 뒤부터 300~180F마다 소환
   // 성 체력 50% 이하 30F 간격으로 8개
   makeWan(
     15,
