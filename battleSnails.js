@@ -1,7 +1,5 @@
 const gameCanvas = document.getElementById("gameCanvas");
 const gameCtx = gameCanvas.getContext("2d");
-const textCanvas = document.getElementById("textCanvas");
-const textCtx = gameCanvas.getContext("2d");
 const ne1Btn = document.querySelector("#ne1");
 const ne2Btn = document.querySelector("#ne2");
 const ne3Btn = document.querySelector("#ne3");
@@ -11,23 +9,19 @@ const FRAMES = 1000 / 30;
 let resizeTimer;
 
 let gameTimer;
-let stage1Timer;
+let stage1WankoTimer;
 
-const mapW = 3600;
-const mapH = 900;
-scale = document.body.clientWidth / mapW;
-textCanvas.width = document.body.clientWidth;
-textCanvas.height = textCanvas.width * 0.25;
-textCtx.scale(scale, scale);
-gameCanvas.width = document.body.clientWidth;
-gameCanvas.height = gameCanvas.width * 0.25;
-gameCtx.scale(scale, scale);
+const mapW = 4000;
+const mapH = 1000;
+let factor;
 
 var nekoMap, neId, wankoMap, wanId;
 var currentMoney;
 var moneyPerFrame;
 var maxMoney;
 var moneyLevel;
+
+let next = 0;
 
 class Neko {
   constructor(
@@ -58,7 +52,7 @@ class Neko {
     this.atk = atk;
     this.atkType = atkType;
     this.lockon = false;
-    this.atkState = -1;
+    this.atkState = 0;
     this.atkRange = atkRange;
     this.atkSpeed1 = atkSpeed1;
     this.atkSpeed2 = atkSpeed2;
@@ -93,7 +87,7 @@ class Wanko {
     this.atk = atk;
     this.atkType = atkType;
     this.lockon = false;
-    this.atkState = -1;
+    this.atkState = 0;
     this.atkRange = atkRange;
     this.atkSpeed1 = atkSpeed1;
     this.atkSpeed2 = atkSpeed2;
@@ -174,29 +168,27 @@ function makeWan(
 const handleResize = () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(function () {
-    scale = document.body.clientWidth / mapW;
-    textCanvas.width = document.body.clientWidth;
-    textCanvas.height = textCanvas.width * 0.25;
-    textCtx.scale(scale, scale);
-    gameCanvas.width = document.body.clientWidth;
-    gameCanvas.height = gameCanvas.width * 0.25;
-    gameCtx.scale(scale, scale);
-  }, 500);
+    let newFactor = document.body.clientWidth / mapW;
+    if (newFactor !== factor) {
+      gameCanvas.width = document.body.clientWidth;
+      gameCanvas.height = gameCanvas.width * 0.25;
+      gameCtx.scale(newFactor, newFactor);
+      factor = newFactor;
+    }
+  }, 0);
 };
 handleResize();
 
 gameCtx.fillStyle = "#333";
-
 gameCtx.strokeStyle = "black";
 gameCtx.lineWidth = 1;
 
-textCtx.font = "normal bold 100px sans-serif";
-textCtx.textAlign = "right";
-textCtx.textBaseline = "top";
-
 function drawMoney() {
-  textCtx.fillStyle = "red";
-  textCtx.fillText(
+  gameCtx.font = "normal bold 100px sans-serif";
+  gameCtx.textAlign = "right";
+  gameCtx.textBaseline = "top";
+  gameCtx.fillStyle = "gold";
+  gameCtx.fillText(
     `${parseInt(currentMoney)} / ${maxMoney} G`,
     mapW - 100,
     100
@@ -232,7 +224,7 @@ function draw() {
     if (!wanko.lockon) {
       wanko.x += wanko.dx;
     }
-    if (wanko.hp <= 0) {
+    if (wanko.hp <= 0 || wanko.x > mapW) {
       wankoMap.delete(wanko.id);
     }
     drawWan(wanko);
@@ -242,16 +234,18 @@ function draw() {
     if (!neko.lockon) {
       neko.x += neko.dx;
     }
-    if (neko.hp <= 0) {
+    if (neko.hp <= 0 || neko.x < 0) {
       nekoMap.delete(neko.id);
     }
     drawNe(neko);
   }
 
-  drawMoney();
+  currentMoney = Math.min(currentMoney + moneyPerFrame, maxMoney);
+
   drawEndline();
-  detectEnemyWanko();
+  drawMoney();
   detectEnemyNeko();
+  detectEnemyWanko();
 }
 
 function disableBtn() {
@@ -260,7 +254,7 @@ function disableBtn() {
 }
 
 function detectEnemyWanko() {
-  for (var neko of nekoMap.values()) {
+  nekoMap.forEach((neko) => {
     const detStart = neko.x + 320;
     const detEnd = neko.x - neko.atkRange;
     const wankoInRange = [...wankoMap].filter(
@@ -274,7 +268,7 @@ function detectEnemyWanko() {
           neko.atkState = 1;
         }, neko.atkSpeed1);
       } else if (neko.atkState == 1) {
-        neko.atkState = -1;
+        neko.atkState = -2;
         setTimeout(() => {
           if (neko.atkType == "single") {
             wankoMap.get(wankoInRange[0][0]).hp -= neko.atk;
@@ -286,7 +280,7 @@ function detectEnemyWanko() {
           neko.atkState = 2;
         }, neko.atkSpeed2);
       } else if (neko.atkState == 2) {
-        neko.atkState = -1;
+        neko.atkState = -3;
         setTimeout(() => {
           neko.atkState = 0;
         }, neko.atkSpeed3);
@@ -295,11 +289,11 @@ function detectEnemyWanko() {
       neko.lockon = false;
       neko.atkState = 0;
     }
-  }
+  });
 }
 
 function detectEnemyNeko() {
-  for (var wanko of wankoMap.values()) {
+  wankoMap.forEach((wanko) => {
     const detStart = wanko.x - 320;
     const detEnd = wanko.x + wanko.atkRange;
     const nekoInRange = [...nekoMap].filter(
@@ -313,7 +307,7 @@ function detectEnemyNeko() {
           wanko.atkState = 1;
         }, wanko.atkSpeed1);
       } else if (wanko.atkState == 1) {
-        wanko.atkState = -1;
+        wanko.atkState = -2;
         setTimeout(() => {
           if (wanko.atkType == "single") {
             nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
@@ -325,7 +319,7 @@ function detectEnemyNeko() {
           wanko.atkState = 2;
         }, wanko.atkSpeed2);
       } else if (wanko.atkState == 2) {
-        wanko.atkState = -1;
+        wanko.atkState = -3;
         setTimeout(() => {
           wanko.atkState = 0;
         }, wanko.atkSpeed3);
@@ -334,7 +328,11 @@ function detectEnemyNeko() {
       wanko.lockon = false;
       wanko.atkState = 0;
     }
-  }
+  });
+}
+
+function changeRegen() {
+  next = Math.floor(Math.random() * 121);
 }
 
 function stage1() {
@@ -343,41 +341,43 @@ function stage1() {
   // 성 체력 50% 이하 30F 간격으로 8개
   makeWan(
     15,
-    200,
-    200,
+    320,
+    320,
     5,
     "gold",
     100,
     8,
     "single",
     110,
-    29 * FRAMES,
+    31 * FRAMES,
     8 * FRAMES,
-    10 * FRAMES
+    8 * FRAMES
   );
-  setTimeout(() => {
-    stage1Timer = setInterval(() => {
+
+  stage1WankoTimer = setInterval(() => {
+    setTimeout(() => {
       makeWan(
         15,
-        200,
-        200,
+        320,
+        320,
         5,
         "gold",
         100,
         8,
         "single",
         110,
-        29 * FRAMES,
+        31 * FRAMES,
         8 * FRAMES,
-        10 * FRAMES
+        8 * FRAMES
       );
-    }, 300 * FRAMES);
-  }, 600 * FRAMES);
+      changeRegen();
+    }, next * FRAMES);
+  }, 300 * FRAMES);
 }
 
 function startGame() {
   clearInterval(gameTimer);
-  clearInterval(stage1Timer);
+  clearInterval(stage1WankoTimer);
   nekoMap = new Map();
   neId = 0;
   wankoMap = new Map();
@@ -410,55 +410,64 @@ startGame();
 //   atkSpeed3
 // )
 ne1Btn.addEventListener("click", () => {
-  makeNe(
-    50,
-    160 * FRAMES,
-    200,
-    200,
-    10,
-    "brown",
-    100,
-    8,
-    "single",
-    140,
-    19 * FRAMES,
-    8 * FRAMES,
-    10 * FRAMES
-  );
+  if (currentMoney >= 50) {
+    currentMoney -= 50;
+    makeNe(
+      50,
+      160 * FRAMES,
+      320,
+      320,
+      10,
+      "brown",
+      100,
+      8,
+      "single",
+      140,
+      21 * FRAMES,
+      8 * FRAMES,
+      8 * FRAMES
+    );
+  }
 });
 ne2Btn.addEventListener("click", () => {
-  makeNe(
-    100,
-    250 * FRAMES,
-    180,
-    400,
-    8,
-    "green",
-    400,
-    2,
-    "area",
-    110,
-    51 * FRAMES,
-    8 * FRAMES,
-    8 * FRAMES
-  );
+  if (currentMoney >= 100) {
+    currentMoney -= 100;
+    makeNe(
+      100,
+      250 * FRAMES,
+      320,
+      640,
+      8,
+      "green",
+      400,
+      2,
+      "area",
+      110,
+      51 * FRAMES,
+      8 * FRAMES,
+      8 * FRAMES
+    );
+  }
 });
 ne3Btn.addEventListener("click", () => {
-  makeNe(
-    400,
-    340 * FRAMES,
-    180,
-    400,
-    8,
-    "silver",
-    400,
-    100,
-    "single",
-    350,
-    111 * FRAMES,
-    8 * FRAMES,
-    8 * FRAMES
-  );
+  if (currentMoney >= 400) {
+    currentMoney -= 400;
+    makeNe(
+      400,
+      340 * FRAMES,
+      320,
+      800,
+      8,
+      "silver",
+      400,
+      100,
+      "single",
+      350,
+      111 * FRAMES,
+      8 * FRAMES,
+      8 * FRAMES
+    );
+  }
 });
 
 resetBtn.addEventListener("click", startGame);
