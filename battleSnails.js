@@ -270,12 +270,17 @@ function detectEnemyWanko() {
       } else if (neko.atkState == 1) {
         neko.atkState = -2;
         setTimeout(() => {
-          if (neko.atkType == "single") {
-            wankoMap.get(wankoInRange[0][0]).hp -= neko.atk;
-          } else if (neko.atkType == "area") {
-            [...wankoInRange].map(
-              ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
-            );
+          const wankoInRange = [...wankoMap].filter(
+            ([id, wanko]) => detStart >= wanko.x && detEnd <= wanko.x
+          );
+          if (wankoInRange.length) {
+            if (neko.atkType == "single") {
+              wankoMap.get(wankoInRange[0][0]).hp -= neko.atk;
+            } else if (neko.atkType == "area") {
+              [...wankoInRange].map(
+                ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
+              );
+            }
           }
           neko.atkState = 2;
         }, neko.atkSpeed2);
@@ -309,12 +314,17 @@ function detectEnemyNeko() {
       } else if (wanko.atkState == 1) {
         wanko.atkState = -2;
         setTimeout(() => {
-          if (wanko.atkType == "single") {
-            nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
-          } else if (wanko.atkType == "area") {
-            [...nekoInRange].map(
-              ([id, neko]) => (nekoMap.get(id).hp -= wanko.atk)
-            );
+          const nekoInRange = [...nekoMap].filter(
+            ([id, neko]) => detStart <= neko.x && detEnd >= neko.x
+          );
+          if (nekoInRange.length) {
+            if (wanko.atkType == "single") {
+              nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
+            } else if (wanko.atkType == "area") {
+              [...nekoInRange].map(
+                ([id, neko]) => (nekoMap.get(id).hp -= wanko.atk)
+              );
+            }
           }
           wanko.atkState = 2;
         }, wanko.atkSpeed2);
