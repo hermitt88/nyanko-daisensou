@@ -44,8 +44,8 @@ class Neko {
     this.id = neId;
     this.width = width;
     this.height = height;
-    this.x = mapW - 100 - width;
-    this.y = mapH - height;
+    this.x = mapW - 100;
+    this.y = mapH - height - Math.floor(Math.random() * 51);
     this.dx = -speed;
     this.color = color;
     this.hp = hp;
@@ -79,8 +79,8 @@ class Wanko {
     this.id = wanId;
     this.width = width;
     this.height = height;
-    this.x = 100 + width;
-    this.y = mapH - height;
+    this.x = 100;
+    this.y = mapH - height - Math.floor(Math.random() * 51);
     this.dx = speed;
     this.color = color;
     this.hp = hp;
@@ -196,7 +196,7 @@ function drawMoney() {
 }
 
 function drawEndline() {
-  for (var j of [100, mapW - 100]) {
+  for (var j of [200, mapW - 200]) {
     for (var i = 0; i < mapH / 10; i++) {
       if (i % 2 == 1) {
         gameCtx.beginPath();
@@ -244,8 +244,8 @@ function draw() {
 
   drawEndline();
   drawMoney();
-  detectEnemyNeko();
-  detectEnemyWanko();
+  handleWankoAtk();
+  handleNekoAtk();
 }
 
 function disableBtn() {
@@ -253,26 +253,44 @@ function disableBtn() {
   // classList.remove("mystyle");
 }
 
-function detectEnemyWanko() {
+function findEnemyWanko(neko) {
+  const start = neko.x + 320;
+  const end = neko.x - neko.atkRange;
+  const wankoInRange = [...wankoMap].filter(
+    ([id, wanko]) => start >= wanko.x && end <= wanko.x
+  );
+  return wankoInRange;
+}
+
+function findEnemyNeko(wanko) {
+  const start = wanko.x - 320;
+  const end = wanko.x + wanko.atkRange;
+  const nekoInRange = [...nekoMap].filter(
+    ([id, neko]) => start <= neko.x && end >= neko.x
+  );
+  return nekoInRange;
+}
+
+function handleNekoAtk() {
   nekoMap.forEach((neko) => {
-    const detStart = neko.x + 320;
-    const detEnd = neko.x - neko.atkRange;
-    const wankoInRange = [...wankoMap].filter(
-      ([id, wanko]) => detStart >= wanko.x && detEnd <= wanko.x
-    );
-    if (wankoInRange.length) {
-      neko.lockon = true;
-      if (neko.atkState == 0) {
+    if (neko.atkState == 0) {
+      var wankoInRange = findEnemyWanko(neko);
+      if (wankoInRange.length) {
+        neko.lockon = true;
         neko.atkState = -1;
         setTimeout(() => {
           neko.atkState = 1;
         }, neko.atkSpeed1);
-      } else if (neko.atkState == 1) {
+      } else {
+        neko.lockon = false;
+        neko.atkState = 0;
+      }
+    } else if (neko.atkState == 1) {
+      wankoInRange = findEnemyWanko(neko);
+      if (wankoInRange.length) {
         neko.atkState = -2;
         setTimeout(() => {
-          const wankoInRange = [...wankoMap].filter(
-            ([id, wanko]) => detStart >= wanko.x && detEnd <= wanko.x
-          );
+          wankoInRange = findEnemyWanko(neko);
           if (wankoInRange.length) {
             if (neko.atkType == "single") {
               wankoMap.get(wankoInRange[0][0]).hp -= neko.atk;
@@ -281,23 +299,22 @@ function detectEnemyWanko() {
                 ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
               );
             }
+            neko.atkState = 2;
+          } else {
+            neko.atkState = 0;
           }
-          neko.atkState = 2;
         }, neko.atkSpeed2);
-      } else if (neko.atkState == 2) {
-        neko.atkState = -3;
-        setTimeout(() => {
-          neko.atkState = 0;
-        }, neko.atkSpeed3);
       }
-    } else {
-      neko.lockon = false;
-      neko.atkState = 0;
+    } else if (neko.atkState == 2) {
+      neko.atkState = -3;
+      setTimeout(() => {
+        neko.atkState = 0;
+      }, neko.atkSpeed3);
     }
   });
 }
 
-function detectEnemyNeko() {
+function handleWankoAtk() {
   wankoMap.forEach((wanko) => {
     const detStart = wanko.x - 320;
     const detEnd = wanko.x + wanko.atkRange;
