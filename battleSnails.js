@@ -196,6 +196,7 @@ function drawMoney() {
 }
 
 function drawEndline() {
+  gameCtx.lineWidth = "1";
   for (var j of [200, mapW - 200]) {
     for (var i = 0; i < mapH / 10; i++) {
       if (i % 2 == 1) {
@@ -211,11 +212,19 @@ function drawEndline() {
 function drawNe(neko) {
   gameCtx.fillStyle = neko.color;
   gameCtx.fillRect(neko.x, neko.y, neko.width, neko.height);
+  gameCtx.strokeStyle = "black";
+  gameCtx.lineWidth = "10";
+  gameCtx.lineJoin = "bevel";
+  gameCtx.strokeRect(neko.x, neko.y, neko.width, neko.height);
 }
 
 function drawWan(wanko) {
   gameCtx.fillStyle = wanko.color;
   gameCtx.fillRect(wanko.x - wanko.width, wanko.y, wanko.width, wanko.height);
+  gameCtx.strokeStyle = "black";
+  gameCtx.lineWidth = "10";
+  gameCtx.lineJoin = "bevel";
+  gameCtx.strokeRect(wanko.x - wanko.width, wanko.y, wanko.width, wanko.height);
 }
 
 function draw() {
@@ -225,6 +234,7 @@ function draw() {
       wanko.x += wanko.dx;
     }
     if (wanko.hp <= 0 || wanko.x > mapW) {
+      currentMoney = Math.min(currentMoney + wanko.reward, maxMoney);
       wankoMap.delete(wanko.id);
     }
     drawWan(wanko);
@@ -246,11 +256,6 @@ function draw() {
   drawMoney();
   handleWankoAtk();
   handleNekoAtk();
-}
-
-function disableBtn() {
-  // classList.add("mystyle");
-  // classList.remove("mystyle");
 }
 
 function findEnemyWanko(neko) {
@@ -283,7 +288,6 @@ function handleNekoAtk() {
         }, neko.atkSpeed1);
       } else {
         neko.lockon = false;
-        neko.atkState = 0;
       }
     } else if (neko.atkState == 1) {
       wankoInRange = findEnemyWanko(neko);
@@ -299,11 +303,11 @@ function handleNekoAtk() {
                 ([id, wanko]) => (wankoMap.get(id).hp -= neko.atk)
               );
             }
-            neko.atkState = 2;
-          } else {
-            neko.atkState = 0;
           }
+          neko.atkState = 2;
         }, neko.atkSpeed2);
+      } else {
+        neko.atkState = 0;
       }
     } else if (neko.atkState == 2) {
       neko.atkState = -3;
@@ -316,24 +320,23 @@ function handleNekoAtk() {
 
 function handleWankoAtk() {
   wankoMap.forEach((wanko) => {
-    const detStart = wanko.x - 320;
-    const detEnd = wanko.x + wanko.atkRange;
-    const nekoInRange = [...nekoMap].filter(
-      ([id, neko]) => detStart <= neko.x && detEnd >= neko.x
-    );
-    if (nekoInRange.length) {
-      wanko.lockon = true;
-      if (wanko.atkState == 0) {
+    if (wanko.atkState == 0) {
+      var nekoInRange = findEnemyNeko(wanko);
+      if (nekoInRange.length) {
+        wanko.lockon = true;
         wanko.atkState = -1;
         setTimeout(() => {
           wanko.atkState = 1;
-        }, wanko.atkSpeed1);
-      } else if (wanko.atkState == 1) {
+        }, wanko.atkSpee1);
+      } else {
+        wanko.lockon = false;
+      }
+    } else if (wanko.atkState == 1) {
+      nekoInRange = findEnemyNeko(wanko);
+      if (nekoInRange.length) {
         wanko.atkState = -2;
         setTimeout(() => {
-          const nekoInRange = [...nekoMap].filter(
-            ([id, neko]) => detStart <= neko.x && detEnd >= neko.x
-          );
+          nekoInRange = findEnemyNeko(wanko);
           if (nekoInRange.length) {
             if (wanko.atkType == "single") {
               nekoMap.get(nekoInRange[0][0]).hp -= wanko.atk;
@@ -345,15 +348,14 @@ function handleWankoAtk() {
           }
           wanko.atkState = 2;
         }, wanko.atkSpeed2);
-      } else if (wanko.atkState == 2) {
-        wanko.atkState = -3;
-        setTimeout(() => {
-          wanko.atkState = 0;
-        }, wanko.atkSpeed3);
+      } else {
+        wanko.atkState = 0;
       }
-    } else {
-      wanko.lockon = false;
-      wanko.atkState = 0;
+    } else if (wanko.atkState == 2) {
+      wanko.atkState = -3;
+      setTimeout(() => {
+        wanko.atkState = 0;
+      }, wanko.atkSpeed3);
     }
   });
 }
@@ -436,7 +438,8 @@ startGame();
 //   atkSpeed2,
 //   atkSpeed3
 // )
-ne1Btn.addEventListener("click", () => {
+
+function cat() {
   if (currentMoney >= 50) {
     currentMoney -= 50;
     makeNe(
@@ -454,9 +457,17 @@ ne1Btn.addEventListener("click", () => {
       8 * FRAMES,
       8 * FRAMES
     );
+
+    ne1Btn.removeEventListener("click", cat);
+    ne1Btn.classList.add("disabled");
+    setTimeout(() => {
+      ne1Btn.addEventListener("click", cat);
+      ne1Btn.classList.remove("disabled");
+    }, 160 * FRAMES);
   }
-});
-ne2Btn.addEventListener("click", () => {
+}
+
+function tankCat() {
   if (currentMoney >= 100) {
     currentMoney -= 100;
     makeNe(
@@ -475,8 +486,9 @@ ne2Btn.addEventListener("click", () => {
       8 * FRAMES
     );
   }
-});
-ne3Btn.addEventListener("click", () => {
+}
+
+function grossCat() {
   if (currentMoney >= 400) {
     currentMoney -= 400;
     makeNe(
@@ -495,7 +507,11 @@ ne3Btn.addEventListener("click", () => {
       8 * FRAMES
     );
   }
-});
+}
+
+ne1Btn.addEventListener("click", cat);
+ne2Btn.addEventListener("click", tankCat);
+ne3Btn.addEventListener("click", grossCat);
 
 resetBtn.addEventListener("click", startGame);
 
