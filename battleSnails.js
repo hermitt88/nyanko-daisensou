@@ -195,6 +195,11 @@ function drawMoney() {
   );
 }
 
+function drawRoad() {
+  gameCtx.fillStyle = "#6b5428";
+  gameCtx.fillRect(0, mapH - 100, mapW, mapH);
+}
+
 function drawEndline() {
   gameCtx.lineWidth = "1";
   for (var j of [200, mapW - 200]) {
@@ -207,6 +212,71 @@ function drawEndline() {
       }
     }
   }
+}
+
+var cat = cat;
+var tankCat = tankCat;
+var grossCat = grossCat;
+
+var catBtns = [
+  {
+    query: ne1Btn,
+    name: cat,
+    cost: 50,
+    cooldown: 160 * FRAMES,
+    cooling: false,
+  },
+  {
+    query: ne2Btn,
+    name: tankCat,
+    cost: 100,
+    cooldown: 250 * FRAMES,
+    cooling: false,
+  },
+  {
+    query: ne3Btn,
+    name: grossCat,
+    cost: 400,
+    cooldown: 340 * FRAMES,
+    cooling: false,
+  },
+];
+
+function handleBtn1() {
+  const btn = catBtns[0];
+  if (currentMoney >= btn.cost && !btn.cooling) {
+    ne1Btn.addEventListener("click", btn.name);
+    ne1Btn.classList.remove("disabled");
+  } else {
+    ne1Btn.removeEventListener("click", btn.name);
+    ne1Btn.classList.add("disabled");
+  }
+}
+function handleBtn2() {
+  const btn = catBtns[1];
+  if (currentMoney >= btn.cost && !btn.cooling) {
+    ne2Btn.addEventListener("click", btn.name);
+    ne2Btn.classList.remove("disabled");
+  } else {
+    ne2Btn.removeEventListener("click", btn.name);
+    ne2Btn.classList.add("disabled");
+  }
+}
+function handleBtn3() {
+  const btn = catBtns[2];
+  if (currentMoney >= btn.cost && !btn.cooling) {
+    ne3Btn.addEventListener("click", btn.name);
+    ne3Btn.classList.remove("disabled");
+  } else {
+    ne3Btn.removeEventListener("click", btn.name);
+    ne3Btn.classList.add("disabled");
+  }
+}
+
+function handleButtons() {
+  handleBtn1();
+  handleBtn2();
+  handleBtn3();
 }
 
 function drawNe(neko) {
@@ -227,9 +297,17 @@ function drawWan(wanko) {
   gameCtx.strokeRect(wanko.x - wanko.width, wanko.y, wanko.width, wanko.height);
 }
 
-function draw() {
+function gameFlow() {
   gameCtx.clearRect(0, 0, mapW, mapH);
-  for (var wanko of wankoMap.values()) {
+
+  drawRoad();
+  drawEndline();
+  drawMoney();
+  handleButtons();
+  handleWankoAtk();
+  handleNekoAtk();
+
+  [...wankoMap].forEach(([id, wanko]) => {
     if (!wanko.lockon) {
       wanko.x += wanko.dx;
     }
@@ -238,9 +316,9 @@ function draw() {
       wankoMap.delete(wanko.id);
     }
     drawWan(wanko);
-  }
+  });
 
-  for (var neko of nekoMap.values()) {
+  [...nekoMap].forEach(([id, neko]) => {
     if (!neko.lockon) {
       neko.x += neko.dx;
     }
@@ -248,14 +326,9 @@ function draw() {
       nekoMap.delete(neko.id);
     }
     drawNe(neko);
-  }
+  });
 
   currentMoney = Math.min(currentMoney + moneyPerFrame, maxMoney);
-
-  drawEndline();
-  drawMoney();
-  handleWankoAtk();
-  handleNekoAtk();
 }
 
 function findEnemyWanko(neko) {
@@ -404,6 +477,10 @@ function stage1() {
   }, 300 * FRAMES);
 }
 
+function stage1Clear() {
+  clearInterval(stage1WankoTimer);
+}
+
 function startGame() {
   clearInterval(gameTimer);
   clearInterval(stage1WankoTimer);
@@ -419,7 +496,7 @@ function startGame() {
 
   stage1();
 
-  gameTimer = setInterval(draw, FRAMES);
+  gameTimer = setInterval(gameFlow, FRAMES);
 }
 
 startGame();
@@ -458,12 +535,10 @@ function cat() {
       8 * FRAMES
     );
 
-    ne1Btn.removeEventListener("click", cat);
-    ne1Btn.classList.add("disabled");
+    catBtns[0].cooling = true;
     setTimeout(() => {
-      ne1Btn.addEventListener("click", cat);
-      ne1Btn.classList.remove("disabled");
-    }, 160 * FRAMES);
+      catBtns[0].cooling = false;
+    }, catBtns[0].cooldown);
   }
 }
 
@@ -485,6 +560,10 @@ function tankCat() {
       8 * FRAMES,
       8 * FRAMES
     );
+    catBtns[1].cooling = true;
+    setTimeout(() => {
+      catBtns[1].cooling = false;
+    }, catBtns[1].cooldown);
   }
 }
 
@@ -506,12 +585,12 @@ function grossCat() {
       8 * FRAMES,
       8 * FRAMES
     );
+    catBtns[2].cooling = true;
+    setTimeout(() => {
+      catBtns[2].cooling = false;
+    }, catBtns[2].cooldown);
   }
 }
-
-ne1Btn.addEventListener("click", cat);
-ne2Btn.addEventListener("click", tankCat);
-ne3Btn.addEventListener("click", grossCat);
 
 resetBtn.addEventListener("click", startGame);
 
